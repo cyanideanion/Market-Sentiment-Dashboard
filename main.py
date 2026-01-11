@@ -8,6 +8,22 @@ from datetime import datetime as dt
 # ==========================================
 # Page Configuration
 # ==========================================
+st.markdown("""
+    <style>
+        .stTabs {
+            background-color: #f9f9f9;
+            padding: 1rem;
+            border-radius: 15px;
+
+        }
+        div[data-baseweb="tab-list"] {
+            background-color: #eeeeee;
+            border-radius: 10px 10px 0 0;
+            padding: 5px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 st.set_page_config(page_title="Market Sentiment Dashboard", layout="wide")
 
 st.title("U.S. Stock Market Sentiment Dashboard")
@@ -298,6 +314,8 @@ with tab1:
 
         fig_spy.update_layout(
             dragmode='pan',
+            paper_bgcolor='#f9f9f9',
+            plot_bgcolor='#f9f9f9',
             title='SPY vs 125-Day Moving Average',
             yaxis_title='Price',
             hovermode='x unified',
@@ -333,7 +351,6 @@ with tab1:
         )
         st.plotly_chart(fig_spy, width='stretch', config={'displayModeBar': False, 'scrollZoom': False})
 
-    st.divider()
 
     # --- Volatilit (VIX) Trend ---
 
@@ -385,6 +402,8 @@ with tab1:
 
         fig_vix.update_layout(
             dragmode='pan',
+            paper_bgcolor='#f9f9f9',
+            plot_bgcolor='#f9f9f9',
             title='VIX vs 50-Day Moving Average',
             yaxis_title='Index',
             hovermode='x unified',
@@ -489,6 +508,8 @@ with tab2:
 
         fig_sh.update_layout(
             dragmode='pan',
+            paper_bgcolor='#f9f9f9',
+            plot_bgcolor='#f9f9f9',
             title='20-Day Yield Spread: SPY vs IEF',
             yaxis_title='Difference in 20-Day Yield (%)',
             hovermode='x unified',
@@ -524,7 +545,6 @@ with tab2:
         )
         st.plotly_chart(fig_sh, width='stretch', config={'displayModeBar': False, 'scrollZoom': False})
 
-    st.divider()
 
     # --- Growth vs Value ---
 
@@ -576,6 +596,8 @@ with tab2:
 
         fig_gv.update_layout(
             dragmode='pan',
+            paper_bgcolor='#f9f9f9',
+            plot_bgcolor='#f9f9f9',
             title='Growth Stocks vs Value Stocks (Relative to SPY)',
             yaxis_title='Deviation from S&P 500 (%)',
             hovermode='x unified',
@@ -678,11 +700,20 @@ with tab3:
             go.Bar(x=pcr_df['DTE'], y=pcr_df['oi_pcr'], name='OI PCR',
               hovertemplate='DTE: %{x}<br>OI PCR: %{y:.2f}<extra></extra>')
         ])
-        fig_pcr.update_layout(dragmode='pan', title='Put/Call Ratios (Nearest 14 Expirations)', xaxis=dict(title='DTE',
-          type='category', tickvals=pcr_df.index, ticktext=pcr_df['DTE']))
+        fig_pcr.update_layout(
+            dragmode='pan', 
+            paper_bgcolor='#f9f9f9',
+            plot_bgcolor='#f9f9f9',
+            title='Put/Call Ratios (Nearest 14 Expirations)', 
+            xaxis=dict(
+                title='DTE',
+                type='category', 
+                tickvals=pcr_df.index, 
+                ticktext=pcr_df['DTE']
+                )
+            )
         st.plotly_chart(fig_pcr, width='stretch', config={'displayModeBar': False, 'scrollZoom': False})
 
-    st.divider()
 
     # --- Skew Diagnostics ---
     col1, col2 = st.columns([1, 3])
@@ -732,7 +763,7 @@ with tab3:
         if ts_slope > 0.2: st.warning("- Long-term risk feared")
         else: st.success("- Stable term-structure sentiment")
         st.write("Implied Volatility (IV) significantly impacts option premiums. IV positively correlates to the expectation that the underlying option ends up “in the money”. Therefore, the volatility skew curve is a direct visualization of supply and demand dynamics influenced by trader sentiments. ")
-        
+
     # [Plotly_VolatilitySkew.py]
 
     with col2:
@@ -771,6 +802,15 @@ with tab3:
 
         # Center line for current SPY price
         fig_skew.add_vline(x=current_p, line_dash="dash", line_color="grey")
-        fig_skew.update_layout(title=f"Volatility Skew (Current Price: {current_p:.2f})", xaxis_title="Strikes", yaxis_title="Implied Volatility (IV)",
-                          xaxis_range=[x_min, x_max], yaxis_range=[ymin, ymax], height=600, dragmode='pan')
+        fig_skew.update_layout(
+            title=f"Volatility Skew (Current Price: {current_p:.2f})", 
+            xaxis_title="Strikes", 
+            yaxis_title="Implied Volatility (IV)", 
+            xaxis_range=[x_min, x_max], 
+            yaxis_range=[ymin, ymax], 
+            height=600, 
+            dragmode='pan',
+            paper_bgcolor='#f9f9f9',
+            plot_bgcolor='#f9f9f9',
+            )
         st.plotly_chart(fig_skew, width='stretch', config={'displayModeBar': False})
