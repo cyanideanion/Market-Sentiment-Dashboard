@@ -490,7 +490,7 @@ with tab2:
             x=sh_returns.index,
             y=sh_returns['Spread'] * 100,
             mode='lines',
-            name='Spread (SPY-IEF)',
+            name='SPY-IEF',
             customdata=sh_returns['Sentiment'],
             hovertemplate='<b>Spread:</b> %{y:.2f}%<br><b>Sentiment:</b> %{customdata}<extra></extra>'
         ))
@@ -501,7 +501,7 @@ with tab2:
             y=[0, 0],
             mode='lines',
             line=dict(color='red', dash='dash', width=1),
-            name='Baseline (0%)',
+            name='Baseline',
             showlegend=True,
             hovertemplate='<b>Baseline:</b> %{y:.2f}%<extra></extra>'
         ))
@@ -588,10 +588,10 @@ with tab2:
     # Generate Plotly
     with col2:
         fig_gv = go.Figure()
-        fig_gv.add_trace(go.Scatter(x=gv_dev.index, y=gv_dev['IVW_dev'], name='Growth Stocks (IVW)',
+        fig_gv.add_trace(go.Scatter(x=gv_dev.index, y=gv_dev['IVW_dev'], name='IVW',
                                     customdata=gv_dev['Sentiment'],
                                     hovertemplate='<b>IVW Dev:</b> %{y:.2f}%<br><b>Sentiment:</b> %{customdata}<extra></extra>'))
-        fig_gv.add_trace(go.Scatter(x=gv_dev.index, y=gv_dev['IVE_dev'], name='Value Stocks (IVE)',
+        fig_gv.add_trace(go.Scatter(x=gv_dev.index, y=gv_dev['IVE_dev'], name='IVE',
                                     hovertemplate='<b>IVE Dev:</b> %{y:.2f}%<extra></extra>'))
 
         fig_gv.update_layout(
@@ -695,20 +695,20 @@ with tab3:
 
     with col2:
         fig_pcr = go.Figure(data=[
-            go.Bar(x=pcr_df['DTE'], y=pcr_df['v_pcr'], name='Volume PCR',
+            go.Bar(x=pcr_df['DTE'], y=pcr_df['v_pcr'], name='Vol',
               hovertemplate='DTE: %{x}<br>Volume PCR: %{y:.2f}<extra></extra>'),
-            go.Bar(x=pcr_df['DTE'], y=pcr_df['oi_pcr'], name='OI PCR',
+            go.Bar(x=pcr_df['DTE'], y=pcr_df['oi_pcr'], name='OI',
               hovertemplate='DTE: %{x}<br>OI PCR: %{y:.2f}<extra></extra>')
         ])
         fig_pcr.update_layout(
-            dragmode='pan', 
+            dragmode='pan',
             paper_bgcolor='#f9f9f9',
             plot_bgcolor='#f9f9f9',
-            title='Put/Call Ratios (Nearest 14 Expirations)', 
+            title='Put/Call Ratios (Nearest 14 Expirations)',
             xaxis=dict(
                 title='DTE',
-                type='category', 
-                tickvals=pcr_df.index, 
+                type='category',
+                tickvals=pcr_df.index,
                 ticktext=pcr_df['DTE']
                 )
             )
@@ -803,12 +803,12 @@ with tab3:
         # Center line for current SPY price
         fig_skew.add_vline(x=current_p, line_dash="dash", line_color="grey")
         fig_skew.update_layout(
-            title=f"Volatility Skew (Current Price: {current_p:.2f})", 
-            xaxis_title="Strikes", 
-            yaxis_title="Implied Volatility (IV)", 
-            xaxis_range=[x_min, x_max], 
-            yaxis_range=[ymin, ymax], 
-            height=600, 
+            title=f"Volatility Skew (Current Price: {current_p:.2f})",
+            xaxis_title="Strikes",
+            yaxis_title="Implied Volatility (IV)",
+            xaxis_range=[x_min, x_max],
+            yaxis_range=[ymin, ymax],
+            height=600,
             dragmode='pan',
             paper_bgcolor='#f9f9f9',
             plot_bgcolor='#f9f9f9',
