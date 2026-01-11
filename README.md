@@ -17,7 +17,7 @@ This dashboard calculates a weighted sentiment score (0-100) based on four key m
 3. **Asset Allocation**: 20-day yield spread between Stocks ($SPY) and Treasury Bonds ($IEF).
 4. **Institutional Rotation**: Performance deviation between Growth ($IVW) and Value ($IVE) stocks.
 
-The app also features diagnostics for **Options Activity**, including Put/Call ratios and Volatility Skew visualization for the nearest 14 expiration dates.
+Also featuring diagnostics for **Options Activity**, including Put/Call ratios and Volatility Skew visualization for the nearest 14 expiration dates.
 
 ## Tech Stack
 - **Language:** Python
