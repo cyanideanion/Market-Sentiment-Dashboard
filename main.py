@@ -35,7 +35,7 @@ def sentiment_legend_custom_text():
     bg_green = "#E8F9EE"
 
     text_color_red = "#BD4043"
-    text_color_blue = "#0054A3"  # Example: Bright yellow text for Neutral
+    text_color_blue = "#0054A3"
     text_color_green = "#158237"
 
     st.markdown(
@@ -814,3 +814,4 @@ with tab3:
             plot_bgcolor='#f9f9f9',
             )
         st.plotly_chart(fig_skew, width='stretch', config={'displayModeBar': False})
+
