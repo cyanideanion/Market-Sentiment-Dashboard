@@ -1,4 +1,4 @@
-Cy's Market Sentiment Dashboard
+# Cy's Market Sentiment Dashboard
 
 A real-time financial sentiment gauge that aggregates multiple data points into a single "Fear & Greed" index for the U.S. Stock Market.
 Aimed to complement CNN's Fear and Greed Index by:
