@@ -94,41 +94,31 @@ sentiment_legend_custom_text()
 
 # Sentiment label functions for individual indicators (also used in tabs)
 
-def get_overall_sentiment_label(s):
-    """Categorizes the 0-100 average into a sentiment string."""
-    if s >= 76: return "Extreme Greed"
-    elif s >= 56: return "Greed"
-    elif s >= 45: return "Neutral"
-    elif s >= 25: return "Fear"
-    else: return "Extreme Fear"
+THRESHOLD_VALUE = ["Extreme Greed","Greed","Neutral","Fear","Extreme Fear"]
 
+overall_threshold = [76,56,45,25]
+spy_threshold = [75,55,45,25]
+vix_threshold = [95,80,20,5]
+sh_threshold = [25,40,60,75]
+gv_threshold = [90,70,40,20]
+
+def get_sentiment_label(s, threshold):
+    """Categorizes the 0-100 average into a sentiment string."""
+    for i in range(4):
+        if s >= threshold[i]: return THRESHOLD_VALUE[i]
+    return THRESHOLD_VALUE[-1]
+    
 def get_spy_sentiment_string(s):
-    if s >= 75: return "Extreme Greed"
-    elif s >= 55: return "Greed"
-    elif s >= 45: return "Neutral"
-    elif s >= 25: return "Fear"
-    else: return "Extreme Fear"
+    get_sentiment_label(s, spy_threshold)
 
 def get_vix_sentiment_string(s):
-    if s >= 95: return "Extreme Greed"
-    elif s >= 80: return "Greed"
-    elif s >= 20: return "Neutral"
-    elif s >= 5: return "Fear"
-    else: return "Extreme Fear"
+    get_sentiment_label(s, vix_threshold)
 
-def get_sh_sentiment_string(score):
-    if score <= 25: return "Extreme Fear"
-    elif score <= 40: return "Fear"
-    elif score <= 60: return "Neutral"
-    elif score <= 75: return "Greed"
-    else: return "Extreme Greed"
+def get_sh_sentiment_string(s):
+    get_sentiment_label(s, sh_threshold)
 
 def get_gv_sentiment_string(s):
-    if s >= 90: return "Extreme Greed"
-    elif s >= 70: return "Greed"
-    elif s >= 40: return "Neutral"
-    elif s >= 20: return "Fear"
-    else: return "Extreme Fear"
+    get_sentiment_label(s, gv_threshold)
 
 # --- Data Fetching & Score Calculation ---
 
@@ -814,4 +804,3 @@ with tab3:
             plot_bgcolor='#f9f9f9',
             )
         st.plotly_chart(fig_skew, width='stretch', config={'displayModeBar': False})
-
