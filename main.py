@@ -97,7 +97,7 @@ sentiment_legend_custom_text()
 THRESHOLD_VALUE = ["Extreme Greed","Greed","Neutral","Fear","Extreme Fear"]
 
 overall_threshold = [76,56,45,25]
-spy_threshold = [75,55,45,25]
+spy_threshold = [76,56,45,25]
 vix_threshold = [95,80,20,5]
 sh_threshold = [25,40,60,75]
 gv_threshold = [90,70,40,20]
@@ -107,6 +107,9 @@ def get_sentiment_label(s, threshold):
     for i in range(4):
         if s >= threshold[i]: return THRESHOLD_VALUE[i]
     return THRESHOLD_VALUE[-1]
+
+def get_overall_sentiment_string(s):
+    get_sentiment_label(s, overall_threshold)
     
 def get_spy_sentiment_string(s):
     get_sentiment_label(s, spy_threshold)
@@ -173,7 +176,7 @@ combined_sentiment_df = pd.concat([spy_scores, vix_scores, sh_scores, gv_scores]
 # Calculate the simple average across all four indicators
 combined_sentiment_df['overall_average_sentiment'] = combined_sentiment_df[['spy_score', 'vix_score', 'sh_score', 'gv_score']].mean(axis=1)
 # Categorize based on user-defined ranges
-combined_sentiment_df['overall_label'] = combined_sentiment_df['overall_average_sentiment'].apply(get_overall_sentiment_label)
+combined_sentiment_df['overall_label'] = combined_sentiment_df['overall_average_sentiment'].apply(get_overall_sentiment_string)
 
 # Get current score
 latest_score = combined_sentiment_df['overall_average_sentiment'].iloc[-1]
@@ -804,3 +807,4 @@ with tab3:
             plot_bgcolor='#f9f9f9',
             )
         st.plotly_chart(fig_skew, width='stretch', config={'displayModeBar': False})
+
