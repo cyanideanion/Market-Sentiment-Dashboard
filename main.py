@@ -188,11 +188,11 @@ st.header("Current Aggregate Sentiment")
 col_stat, col_chart = st.columns([1, 3])
 
 with col_stat:
-    if latest_label == "Extreme Greed": st.success(f"**{latest_label}**")
-    elif latest_label == "Greed": st.success(f"**{latest_label}**")
-    elif latest_label == "Neutral": st.info(f"**{latest_label}**")
-    elif latest_label == "Fear": st.error(f"**{latest_label}**")
-    else: st.error(f"**{latest_label}**")
+    if latest_label == "Extreme Greed": st.success(f"**Extreme Greed**")
+    elif latest_label == "Greed": st.success(f"**Greed**")
+    elif latest_label == "Neutral": st.info(f"**Neutral**")
+    elif latest_label == "Fear": st.error(f"**Fear**")
+    else: st.error(f"**Extreme Fear**")
 
     st.metric("Aggregate Score", f"{latest_score:.0f}/100")
     #st.write("This score is the simple average of all four market indicators.")
@@ -807,4 +807,5 @@ with tab3:
             plot_bgcolor='#f9f9f9',
             )
         st.plotly_chart(fig_skew, width='stretch', config={'displayModeBar': False})
+
 
