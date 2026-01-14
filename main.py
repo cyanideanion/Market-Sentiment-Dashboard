@@ -4,6 +4,10 @@ import pandas as pd
 import datetime
 import plotly.graph_objects as go
 from datetime import datetime as dt
+from data_loader import (
+    get_spy_data, get_vix_data, get_sh_data, 
+    get_gv_data, get_options_data
+    )
 
 # ==========================================
 # Page Configuration
@@ -99,7 +103,7 @@ THRESHOLD_VALUE = ["Extreme Greed","Greed","Neutral","Fear","Extreme Fear"]
 overall_threshold = [76,56,45,25]
 spy_threshold = [76,56,45,25]
 vix_threshold = [95,80,20,5]
-sh_threshold = [25,40,60,75]
+sh_threshold = [75,60,40,25]
 gv_threshold = [90,70,40,20]
 
 def get_sentiment_label(s, threshold):
@@ -109,24 +113,24 @@ def get_sentiment_label(s, threshold):
     return THRESHOLD_VALUE[-1]
 
 def get_overall_sentiment_string(s):
-    get_sentiment_label(s, overall_threshold)
+    return get_sentiment_label(s, overall_threshold)
     
 def get_spy_sentiment_string(s):
-    get_sentiment_label(s, spy_threshold)
+    return get_sentiment_label(s, spy_threshold)
 
 def get_vix_sentiment_string(s):
-    get_sentiment_label(s, vix_threshold)
+    return get_sentiment_label(s, vix_threshold)
 
 def get_sh_sentiment_string(s):
-    get_sentiment_label(s, sh_threshold)
+    return get_sentiment_label(s, sh_threshold)
 
 def get_gv_sentiment_string(s):
-    get_sentiment_label(s, gv_threshold)
+    return get_sentiment_label(s, gv_threshold)
 
 # --- Data Fetching & Score Calculation ---
 
 # Tab1 Col1. S&P 500 Trend
-df_spy = yf.download('SPY', period='10y', auto_adjust=True, progress=False)
+df_spy = get_spy_data()
 if isinstance(df_spy.columns, pd.MultiIndex):
     df_spy.columns = df_spy.columns.get_level_values(0)
 df_spy['125MA'] = df_spy['Close'].rolling(window=125).mean()
@@ -135,7 +139,7 @@ df_spy['Score'] = df_spy['Diff'].rolling(window=365).rank(pct=True) * 100
 df_spy['Sentiment'] = df_spy['Score'].apply(get_spy_sentiment_string)
 
 # Tab1 Col2. VIX Trend (Inverted)
-vix_data = yf.download('^VIX', period='10y', auto_adjust=True, progress=False)
+vix_data = get_vix_data()
 if isinstance(vix_data.columns, pd.MultiIndex):
     vix_data.columns = vix_data.columns.get_level_values(0)
 vix_df = vix_data[['Close']].copy()
@@ -146,7 +150,7 @@ vix_df['Calculated_Score'] = 100 - vix_df['Percentile']
 vix_df['Sentiment'] = vix_df['Calculated_Score'].apply(get_vix_sentiment_string)
 
 # Tab2 Col1. Safe Haven Demand
-sh_data = yf.download(['SPY', 'IEF'], period='10y', auto_adjust=True, progress=False)['Close']
+sh_data = get_sh_data()
 if isinstance(sh_data.columns, pd.MultiIndex):
     sh_data.columns = sh_data.columns.get_level_values(0)
 sh_returns = sh_data.pct_change(20).dropna()
@@ -155,7 +159,7 @@ sh_returns['Score'] = sh_returns['Spread'].rolling(window=252).rank(pct=True) * 
 sh_returns['Sentiment'] = sh_returns['Score'].apply(get_sh_sentiment_string)
 
 # Tab2 Col2. Growth vs Value
-gv_data = yf.download(['SPY', 'IVW', 'IVE'], period='10y', auto_adjust=True, progress=False)['Close']
+gv_data = get_gv_data()
 if isinstance(gv_data.columns, pd.MultiIndex):
     gv_data.columns = gv_data.columns.get_level_values(0)
 gv_returns = gv_data.pct_change(periods=252)
@@ -188,11 +192,11 @@ st.header("Current Aggregate Sentiment")
 col_stat, col_chart = st.columns([1, 3])
 
 with col_stat:
-    if latest_label == "Extreme Greed": st.success(f"**Extreme Greed**")
-    elif latest_label == "Greed": st.success(f"**Greed**")
-    elif latest_label == "Neutral": st.info(f"**Neutral**")
-    elif latest_label == "Fear": st.error(f"**Fear**")
-    else: st.error(f"**Extreme Fear**")
+    if latest_label == "Extreme Greed": st.success(f"**{latest_label}**")
+    elif latest_label == "Greed": st.success(f"**{latest_label}**")
+    elif latest_label == "Neutral": st.info(f"**{latest_label}**")
+    elif latest_label == "Fear": st.error(f"**{latest_label}**")
+    else: st.error(f"**{latest_label}**")
 
     st.metric("Aggregate Score", f"{latest_score:.0f}/100")
     #st.write("This score is the simple average of all four market indicators.")
@@ -634,22 +638,22 @@ with tab3:
 
     col1, col2 = st.columns([1, 3])
 
+    option_chains, current_price = get_options_data('SPY')
+
     # [SentimentScore_PutCall_Ratio.py]
 
-    spy = yf.Ticker('SPY')
-    option_dates = spy.options[:14] # Set observation range to the nearest 14 expirations
     pcr_results = []
 
-    # Unlike previsous indicators, yfinance does not provide retrospective data on options
-    # Per-date loop for the all SPY options in the observation rage
-    for date in option_dates:
-      chain = spy.option_chain(date)
+    for entry in option_chains:
+      date = entry['date']
+      calls = entry['calls']
+      puts = entry['puts']
 
       # Access volume and openInterest directly from the calls and puts DataFrames
-      v_put = chain.puts['volume'].sum()
-      v_call = chain.calls['volume'].sum()
-      oi_put = chain.puts['openInterest'].sum() # Corrected access
-      oi_call = chain.calls['openInterest'].sum() # Corrected access
+      v_put = puts['volume'].sum()
+      v_call = calls['volume'].sum()
+      oi_put = puts['openInterest'].sum() # Corrected access
+      oi_call = calls['openInterest'].sum() # Corrected access
 
       # Calculate ratios with safety checks for division by zero
       v_ratio = v_put / v_call if v_call > 0 else 0
@@ -689,9 +693,9 @@ with tab3:
     with col2:
         fig_pcr = go.Figure(data=[
             go.Bar(x=pcr_df['DTE'], y=pcr_df['v_pcr'], name='Vol',
-              hovertemplate='DTE: %{x}<br>Volume PCR: %{y:.2f}<extra></extra>'),
+              hovertemplate='<b>DTE:</b> %{x}<br><b>Volume PCR:</b> %{y:.2f}<extra></extra>'),
             go.Bar(x=pcr_df['DTE'], y=pcr_df['oi_pcr'], name='OI',
-              hovertemplate='DTE: %{x}<br>OI PCR: %{y:.2f}<extra></extra>')
+              hovertemplate='<b>DTE:</b> %{x}<br><b>OI PCR:</b> %{y:.2f}<extra></extra>')
         ])
         fig_pcr.update_layout(
             dragmode='pan',
@@ -712,21 +716,32 @@ with tab3:
     col1, col2 = st.columns([1, 3])
 
     # [SentimentScore_VolatilitySkew.py]
-    current_price = spy.history(period="1d")['Close'].iloc[-1]
     ATM_WIN, OTM_PCT = 0.01, 0.10 # 1% ATM window, +-10% OTM window
     skew_results = []
+           
+    # Plotly_VolatilitySkew.py moved ahead to share option_chains loop
+    # Color code calls and puts, lighter color = further expiration
+    fig_skew = go.Figure()
+        
+    # Set default X-axis view to +-5% from current SPY price
+    x_min, x_max = current_price * 0.95, current_price * 1.05
+    all_ivs = []
 
     # Per-date loop for the all SPY options in the nearest 14 expirations
-    for expiry in spy.options[:14]:
-        opt = spy.option_chain(expiry)
-
-        calls, puts = opt.calls.copy(), opt.puts.copy()
-        calls["type"], puts["type"] = "call", "put"
+    for i, entry in enumerate(option_chains):
+        exp_date = entry['date']
+        calls = entry['calls'].copy()
+        puts = entry['puts'].copy()       
+        dte = (dt.strptime(exp_date, '%Y-%m-%d').date() - dt.now().date()).days
+        
+        calls["type"] = "call"
+        puts["type"] = "put"
 
         # Indentify ATM and OTM options
         df_skew = pd.concat([calls, puts])
         df_skew = df_skew[df_skew["impliedVolatility"] > 0]
         df_skew["moneyness"] = df_skew["strike"] / current_price
+
         atm = df_skew[(df_skew["moneyness"] > 1 - ATM_WIN) & (df_skew["moneyness"] < 1 + ATM_WIN)]
         otm_calls = df_skew[(df_skew["type"] == "call") & (df_skew["moneyness"] > 1 + OTM_PCT)]
         otm_puts = df_skew[(df_skew["type"] == "put") & (df_skew["moneyness"] < 1 - OTM_PCT)]
@@ -738,13 +753,38 @@ with tab3:
                  "call_fomo": otm_calls["impliedVolatility"].mean() / atm["impliedVolatility"].mean()}
             skew_results.append(m)
 
-    # Compute the average of "Tail-skew", "Put Convexity", and "Call-FOMO" across all expirations
-    df_m = pd.DataFrame(skew_results)
-    avg_tail, avg_conv, avg_fomo = df_m["tail"].mean(), df_m["put_conv"].mean(), df_m["call_fomo"].mean()
-    ts_slope = df_m.iloc[-1]["tail"] - df_m.iloc[0]["tail"]
+        # Plotly metrics
+        for df_opt, color_base in [(calls, '0, 128, 0'), (puts, '255, 0, 0')]:
+            df_opt = df_opt[df_opt['impliedVolatility'] > 0.001]
+            df_opt['smooth'] = df_opt['impliedVolatility'].rolling(window=5, min_periods=1, center=True).mean()
+            alpha = 1.0 - (i / len(option_chains)) * 0.9
+            
+            fig_skew.add_trace(
+                go.Scatter(
+                    x=df_opt['strike'], 
+                    y=df_opt['smooth'] * 100,
+                    mode='lines',
+                    line=dict(color=f'rgba({color_base}, {alpha})', width=1),
+                    showlegend=False,
+                    hovertemplate=(
+                        f'<b>DTE:</b> {dte}<br>' 
+                        '<b>Strike:</b> %{x:.0f}<br>'
+                        '<b>IV:</b> %{y:.2f}%'
+                        '<extra></extra>'
+                        )
+                    )
+                )
+            # Collect IV for axis scaling  
+            mask = (df_opt['strike'] >= x_min) & (df_opt['strike'] <= x_max)
+            all_ivs.extend((df_opt.loc[mask, 'smooth'] * 100).tolist())          
 
     # Diagnostic results based on average
     with col1:
+        # Compute the average of "Tail-skew", "Put Convexity", and "Call-FOMO" across all expirations
+        df_m = pd.DataFrame(skew_results)
+        avg_tail, avg_conv, avg_fomo = df_m["tail"].mean(), df_m["put_conv"].mean(), df_m["call_fomo"].mean()
+        ts_slope = df_m.iloc[-1]["tail"] - df_m.iloc[0]["tail"]
+        
         st.subheader("Skew Diagnostics")
         if avg_tail > 1.3: st.error("- Strong downside tail fear")
         elif avg_tail > 1.1: st.warning("- Moderate downside risk awareness")
@@ -760,33 +800,6 @@ with tab3:
     # [Plotly_VolatilitySkew.py]
 
     with col2:
-        current_p = spy.history(period="1d")['Close'].iloc[-1]
-        expirations_skew = spy.options[:14]
-        fig_skew = go.Figure()
-        # Set default X-axis view to +-5% from current SPY price
-        x_min, x_max = current_p * 0.95, current_p * 1.05
-        all_ivs = []
-
-        # Compute IV curves
-        for i, exp_date in enumerate(expirations_skew):
-            # Format time to Days to Expiration
-            dte = (dt.strptime(exp_date, '%Y-%m-%d').date() - dt.now().date()).days
-            opt = spy.option_chain(exp_date)
-            # Smoothing for reasonable liquidity and remove zero IV values
-            c, p = opt.calls[opt.calls['impliedVolatility'] > 0.001].copy(), opt.puts[opt.puts['impliedVolatility'] > 0.001].copy()
-
-            # Color code calls and puts, lighter color = further expiration
-            for df_opt, color_base, group in [(c, '0, 128, 0', 'Calls'), (p, '255, 0, 0', 'Puts')]:
-                df_opt['smooth'] = df_opt['impliedVolatility'].rolling(window=5, min_periods=1, center=True).mean()
-                alpha = 1.0 - (i / len(expirations_skew)) * 0.9
-                fig_skew.add_trace(go.Scatter(x=df_opt['strike'], y=df_opt['smooth'] * 100, mode='lines',
-                                         line=dict(color=f'rgba({color_base}, {alpha})', width=1), showlegend=False,
-                                         hovertemplate=f'<b>{dte} DTE</b>: %{{y:.2f}}%<extra></extra>'))
-
-                # Collect IV for axis scaling
-                mask = (df_opt['strike'] >= x_min) & (df_opt['strike'] <= x_max)
-                all_ivs.extend((df_opt.loc[mask, 'smooth'] * 100).tolist())
-
         # Set default Y-axis view to +-5% from ATM IV
         if all_ivs:
             ymin, ymax = min(all_ivs) * 0.95, max(all_ivs) * 1.05
@@ -794,9 +807,9 @@ with tab3:
             ymin, ymax = 0, 100
 
         # Center line for current SPY price
-        fig_skew.add_vline(x=current_p, line_dash="dash", line_color="grey")
+        fig_skew.add_vline(x=current_price, line_dash="dash", line_color="grey")
         fig_skew.update_layout(
-            title=f"Volatility Skew (Current Price: {current_p:.2f})",
+            title=f"Volatility Skew (Current Price: {current_price:.2f})",
             xaxis_title="Strikes",
             yaxis_title="Implied Volatility (IV)",
             xaxis_range=[x_min, x_max],
@@ -807,5 +820,4 @@ with tab3:
             plot_bgcolor='#f9f9f9',
             )
         st.plotly_chart(fig_skew, width='stretch', config={'displayModeBar': False})
-
 
