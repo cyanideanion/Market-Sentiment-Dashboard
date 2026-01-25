@@ -1,26 +1,59 @@
-# Market Sentiment Dashboard
+# Market Sentiment Dashboard & Conditional Return Analysis
 
-A real-time financial sentiment gauge that aggregates multiple data points into a single "Fear & Greed" index for the U.S. Stock Market.
-Aimed to complement CNN's Fear and Greed Index by:
-  1. Modified core components for computing sentiments
-  2. Interactive 10-year charts for each component
-  3. Diagnostics on options activities
+## Overview
+This project develops a stock market sentiment diagnosis through aggregating multiple macro-financial indicators into interpretable sentiment labels (Extreme Fear, Greed, Neutral, Greed, Extreme Greed), and examines how these labels coincided with market behaviors historically.
+
+The purpose of the project is **not to propose a trading strategy and thus does not constitute any financial advices**, but to explore:
+- how sentiment indicators co-move with market dynamics,
+- how long extreme sentiment state tend to persist, 
+- how different sentiment aligned with subsequent return distributions across different time horizons.
 
 ## Live Application
 **[View Live Dashboard](https://cy-market-sentiment-dashboard.streamlit.app)**
 
-## Methodology
-This dashboard calculates a weighted sentiment score (0-100) based on four key market pillars:
+## Motivation
+Greed and fear, as part of “animal spirits”, are mental instincts that deviate economic decisions from rationality and efficiency. This theory was coined by John Maynard Keynes in his book The General Theory of Employment, Interest and Money (1936), and maintained its popularity among studies in behavioral economics and behavioral finance today. 
 
-1. **Market Trend**: S&P 500 price relative to its 125-day Moving Average.
-2. **Volatility**: VIX Index movement relative to its 50-day trend.
-3. **Asset Allocation**: 20-day yield spread between Stocks ($SPY) and Treasury Bonds ($IEF).
-4. **Institutional Rotation**: Performance deviation between Growth ($IVW) and Value ($IVE) stocks.
+However, many sentiment tools are either:
+- opaque composites with little interpretability, or
+- presented in a way that encourages overfitting and performance chasing.
 
-Also featuring diagnostics for **Options Activity**, including Put/Call ratios and Volatility Skew visualization for the nearest 14 expiration dates.
+This project was built to bridge that gap by combining:
+- transparent indicator construction and calculation methods
+- 10 years lookback window
+- research-style exploratory analysis.
 
-## Tech Stack
+## Key Features
+### Sentiment Construction
+The aggregate sentiment score integrates multiple market-based indicators, including:
+- equity trend deviation (SPY vs moving averages),
+- implied volatility (VIX),
+- yield spreads (risk-free vs equities),
+- sector rotation dynamics.
+
+Indicators are standardized and combined into a composite sentiment score, which is then discretized into five labels:
+
+**Extreme Fear, Fear, Neutral, Greed, Extreme Greed.**
+
+### Interactive Plots
+The dashboard allows users to:
+- compare trends across different market sentiments in the past decade,
+- examine co-movement between sentiment changes and market movements,
+- explore historical incidents of sentiment dislocation.
+
+### Research Appendix (Descriptive Analysis)
+An optional research appendix applies empirical tools commonly used in economic research:
+1. **Correlation Analysis:** testing reliability of the aggregate sentiment score and decoupling incidents through examining the 60-day rolling correlations between standardized sentiment changes and SPY returns
+2. **Recovery Time Analysis:** studies the distribution of calendar days required for sentiment to recover from “Extreme Fear” to “Neutral”
+3. **Forward Performance Analysis:** examination of forward return distributions conditional on sentiment states while focusing on risk–return asymmetry rather than performance ranking.
+
+*All analyses are retrospective, assumption-dependent, and intended for educational and research purposes only.*
+
+## Technical Stack
 - **Language:** Python
-- **Framework:** Streamlit
-- **Data Source:** Yahoo Finance (`yfinance`)
-- **Plots:** Plotly Interactive Charts
+- **Visualization:** Plotly
+- **Dashboard:** Streamlit
+- **Data:** yfinance
+
+## Disclaimer
+This project is for **research purposes only.** It does not constitute investment advice, trading recommendations, or performance claims.
