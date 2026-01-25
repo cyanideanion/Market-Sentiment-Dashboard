@@ -797,11 +797,11 @@ with tab3:
 
     st.divider()
 
-    # --- Forwad Performance Analysis ---
+    # --- Forward Performance Analysis ---
     col1, col2 = st.columns([1, 1])
 
     with col1:
-        st.subheader("Forwad Performance Analysis")
+        st.subheader("Forward Performance Analysis")
         # Access the text from the dictionary
         texts = content.RESEARCH_APPENDIX["forward_performance"]
         st.write(texts["method"])
@@ -1059,4 +1059,5 @@ with tab4:
             plot_bgcolor='#f9f9f9',
             )
         st.plotly_chart(fig_skew, width='stretch', config={'displayModeBar': False})
+
 
