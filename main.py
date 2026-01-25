@@ -1,13 +1,16 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
+import numpy as np
 import datetime
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from datetime import datetime as dt
 from data_loader import (
-    get_spy_data, get_vix_data, get_sh_data, 
+    get_spy_data, get_vix_data, get_sh_data,
     get_gv_data, get_options_data
-    )
+)
+import content
 
 # ==========================================
 # Page Configuration
@@ -24,6 +27,8 @@ st.markdown("""
             background-color: #eeeeee;
             border-radius: 10px 10px 0 0;
             padding: 5px;
+            padding-left: 15px;
+            gap: 20px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -114,7 +119,7 @@ def get_sentiment_label(s, threshold):
 
 def get_overall_sentiment_string(s):
     return get_sentiment_label(s, overall_threshold)
-    
+
 def get_spy_sentiment_string(s):
     return get_sentiment_label(s, spy_threshold)
 
@@ -254,7 +259,8 @@ with col_chart:
     st.plotly_chart(fig_overall_sentiment, width='stretch', config={'displayModeBar': False, 'scrollZoom': False})
 
 # Setup tabs for different catagories of indicators
-tab1, tab2, tab3 = st.tabs(["Market Trend", "Asset Allocation", "Options Activity"])
+tab1, tab2, tab3, tab4 = st.tabs(["Market Trend", "Asset Allocation", "Research Appendix", "Options Activity"])
+
 
 # ==========================================
 # TAB 1: MARKET Trend
@@ -435,6 +441,7 @@ with tab1:
             )
         )
         st.plotly_chart(fig_vix, width='stretch', config={'displayModeBar': False, 'scrollZoom': False})
+
 
 # ==========================================
 # TAB 2: ASSET ALLOCATION
@@ -630,10 +637,242 @@ with tab2:
         )
         st.plotly_chart(fig_gv, width='stretch', config={'displayModeBar': False, 'scrollZoom': False})
 
+
 # ==========================================
-# TAB 3: OPTIONS ACTIVITY
+# TAB 3: RESEARCH APPENDIX
 # ==========================================
 with tab3:
+
+    st.write("**Methodological Note:** Analyses shown here are descriptive and conditional. They are not presented as trading strategies, and no transaction costs, leverage, or execution assumptions are modeled.")
+
+    #st.divider()
+
+    # --- Correlation Analysis ---
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        st.subheader("Correlation Analysis")
+        # Access the text from the dictionary
+        texts = content.RESEARCH_APPENDIX["correlation_analysis"]
+        st.write(texts["method"])
+        st.write(texts["results"])
+        st.write(texts["discussion"])
+
+    with col2:
+        def analyze_standardized_correlation(combined_sentiment_df, df_spy):
+            df = pd.concat([
+                combined_sentiment_df[['overall_average_sentiment']],
+                df_spy[['Close']]
+            ], axis=1).dropna()
+
+            df['sentiment_pct'] = df['overall_average_sentiment'].pct_change()
+            df['spy_pct'] = df['Close'].pct_change()
+            df.dropna(inplace=True)
+
+            # Z-Score Standardization
+            df['sentiment_z'] = (df['sentiment_pct'] - df['sentiment_pct'].mean()) / df['sentiment_pct'].std()
+            df['spy_z'] = (df['spy_pct'] - df['spy_pct'].mean()) / df['spy_pct'].std()
+            df['rolling_corr'] = df['sentiment_z'].rolling(window=60).corr(df['spy_z'])
+
+            # --- Generate Plot ---
+            # Subplot: isolates Z-Score and Correlation Analysis
+            fig = make_subplots(
+              rows=2, cols=1,
+              shared_xaxes=True,
+              vertical_spacing=0.1,
+              subplot_titles=(
+                  f"Z-Scores of Daily % Changes", "60-Day Rolling Correlation of Standardized % Change"
+              )
+            )
+
+            # Top Plot: Z-Score Comparison
+            # Visualizes correlation during extreme scenarios
+            fig.add_trace(go.Scatter(
+                x=df.index, y=df['spy_z'],
+                name="SPY",
+                line=dict(color='#1f77b4', width=1),
+                opacity=0.5
+            ), row=1, col=1)
+
+            fig.add_trace(go.Scatter(
+                x=df.index, y=df['sentiment_z'],
+                name="Sentiment",
+                line=dict(color='#bd4043', width=1),
+                opacity=0.5
+            ), row=1, col=1)
+
+            # Bottom Plot: Rolling Correlation
+            fig.add_trace(go.Scatter(
+                x=df.index, y=df['rolling_corr'],
+                name="60D Roll. Corr.",
+                fill='tozeroy',
+                line=dict(color='#1f77b4')
+            ), row=2, col=1)
+
+            fig.update_layout(
+                title_text="Market Sentiment Score vs. SPY Performance",
+                yaxis_range=[-3, 3],
+                height=750,
+                template="plotly_white",
+                hovermode="x unified",
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+                dragmode='pan',
+                paper_bgcolor='#f9f9f9',
+                plot_bgcolor='#f9f9f9'
+            )
+
+            fig.update_yaxes(title_text="Standard Deviations (Z-Score)", row=1, col=1)
+            fig.update_yaxes(title_text="Correlation Coefficient", range=[-1, 1], row=2, col=1)
+            return fig
+
+        fig_corr = analyze_standardized_correlation(combined_sentiment_df, df_spy)
+        st.plotly_chart(fig_corr, width='stretch')
+
+    st.divider()
+
+    # --- Recorvery Time Analysis ---
+    col1, col2 = st.columns([1, 0.5])
+
+    with col1:
+        st.subheader("Recorvery Time Analysis")
+        # Access the text from the dictionary
+        texts = content.RESEARCH_APPENDIX["recovery_analysis"]
+        st.write(texts["method"])
+        st.write(texts["results"])
+        st.write(texts["discussion"])
+
+    with col2:
+        def plot_recovery_boxplot(combined_sentiment_df):
+            df = combined_sentiment_df[['overall_average_sentiment']].copy()
+            df.index = pd.to_datetime(df.index)
+
+            EF_THRESHOLD, NEUTRAL_THRESHOLD = 25, 45 # Sentiment Score Threasholds
+            is_extreme_fear = df['overall_average_sentiment'] < EF_THRESHOLD # Triggers counter when score < 25
+            ef_entries = df.index[is_extreme_fear & (~is_extreme_fear.shift(1, fill_value=False))]
+
+            durations = []
+            for start_date in ef_entries:
+                future_data = df.loc[start_date:]
+                recovery_event = future_data[future_data['overall_average_sentiment'] >= NEUTRAL_THRESHOLD] # Count calendar days until score >= 45
+                if not recovery_event.empty:
+                    durations.append((recovery_event.index[0] - start_date).days)
+
+            if not durations:
+                return None
+
+            # --- Generate Plot ---
+            fig = go.Figure(go.Box(
+                y = durations,
+                name = "Days",
+                boxpoints = 'all', # Show all underlying data points next to the box
+                jitter = 0.5,      # Spread out points so they don't overlap
+                pointpos = -1.8,   # Position of points relative to the box
+                line = dict(color='#1f77b4'),
+                hovertemplate = 'Days: %{y}<extra></extra>'
+            ))
+
+            # Update Layout to match Dashboard theme
+            fig.update_layout(
+                title={
+                    'text': "Distribution of Recovery Times: Extreme Fear to Neutral",
+                    'y': 0.9,
+                    'x': 0.5,
+                    'xanchor': 'center',
+                    'yanchor': 'top'
+                },
+                yaxis_title="Calendar Days until Recovery",
+                xaxis=dict(showticklabels=False),
+                template="plotly_white",
+                #width=1200,
+                height=800,
+                showlegend=False,
+                dragmode='pan',
+                paper_bgcolor='#f9f9f9',
+                plot_bgcolor='#f9f9f9'
+            )
+            return fig
+
+        fig_recov = plot_recovery_boxplot(combined_sentiment_df)
+        st.plotly_chart(fig_recov, width='stretch')
+
+    st.divider()
+
+    # --- Forwad Performance Analysis ---
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        st.subheader("Forwad Performance Analysis")
+        # Access the text from the dictionary
+        texts = content.RESEARCH_APPENDIX["forward_performance"]
+        st.write(texts["method"])
+        st.write(texts["results"])
+        st.write(texts["discussion"])
+
+    with col2:
+        def plot_multi_horizon_performance(combined_sentiment_df, df_spy):
+
+            data = pd.DataFrame(index=combined_sentiment_df.index)
+            data['Label'] = combined_sentiment_df['overall_label']
+            data['Price'] = df_spy['Close']
+            data.dropna(subset=['Label', 'Price'], inplace=True)
+
+            horizons = {'1-Month': 21, '3-Months': 63, '6-Months': 126, '12-Months': 252} # Trading day approximations
+
+            for name, period in horizons.items():
+                data[f'{name}_Ret'] = (data['Price'].shift(-period) / data['Price'] - 1) * 100
+
+            label_order = ["Extreme Fear", "Fear", "Neutral", "Greed", "Extreme Greed"]
+            performance_cols = [f'{name}_Ret' for name in horizons.keys()]
+
+            long_df = data.melt(id_vars=['Label'], value_vars=performance_cols, var_name='Horizon_Ret_Col', value_name='Return')
+            long_df['Horizon'] = long_df['Horizon_Ret_Col'].str.replace('_Ret', '')
+            long_df['Label'] = pd.Categorical(long_df['Label'], categories=label_order, ordered=True)
+            long_df.sort_values(by=['Label', 'Horizon'], inplace=True)
+
+            fig = go.Figure()
+            colors = ['#aec7e8', '#7fb3d5', '#2980b9', '#154360'] # Light to Dark Blue
+
+            for i, horizon_name in enumerate(horizons.keys()):
+                horizon_data = long_df[long_df['Horizon'] == horizon_name]
+                fig.add_trace(go.Box(
+                    x=horizon_data['Label'],
+                    y=horizon_data['Return'],
+                    name=horizon_name,
+                    marker_color=colors[i],
+                    boxpoints='outliers',
+                    boxmean=True))
+
+            fig.update_layout(
+                  title={
+                      'text': "Distribution of Forward Returns by Aggregate Sentiment Regime",
+                      'y': 0.95, 'x': 0.5, 'xanchor': 'center'
+                  },
+                  xaxis_title="Aggregate Sentiment",
+                  yaxis_title="Forward Return (%)",
+                  boxmode='group', # Groups the boxes for each sentiment label
+                  template="plotly_white",
+                  legend=dict(
+                      orientation="h",
+                      yanchor="bottom", y=1.02,
+                      xanchor="right", x=1
+                  ),
+                  height=600,
+                  dragmode='pan',
+                  paper_bgcolor='#f9f9f9',
+                  plot_bgcolor='#f9f9f9'
+              )
+
+            fig.add_hline(y=0, line_dash="solid", line_color="black", line_width=1)
+            return fig
+
+        fig_perf = plot_multi_horizon_performance(combined_sentiment_df, df_spy)
+        st.plotly_chart(fig_perf, width='stretch')
+
+
+# ==========================================
+# TAB 4: OPTIONS ACTIVITY
+# ==========================================
+with tab4:
     # --- Put/Call Sentiment ---
 
     col1, col2 = st.columns([1, 3])
@@ -683,7 +922,7 @@ with tab3:
         get_pcr_sentiment(pcr_df)
         st.write("Avg Vol PCR:", f"{avg_v:.2f}")
         st.write("Avg OI PCR:", f"{avg_oi:.2f}")
-        st.write("Put/Call Ratio measures the trading activity on Put relative to Call options. A ratio above 1 suggests bearish sentiment (more puts), while below 1 indicates bullishness (more calls). Furthermore, PCR can be divided into volume and open interest, which can be roughly interpreted as the immediate flow and existing commitment in Puts (Bearish) and Calls (Bullish), respectively.")
+        st.write("Put/Call Ratio measures the trading activity on Put relative to Call options. A ratio above 1 suggests bearish sentiment (more puts), while below 1 indicates bullishness (more calls). Furthermore, PCR can be divided into volume and open interest, which can be roughly interpreted as the immediate flow and existing commitment, respectively.")
 
     # [Plotly_PutCall_Ratio.py]
 
@@ -718,11 +957,11 @@ with tab3:
     # [SentimentScore_VolatilitySkew.py]
     ATM_WIN, OTM_PCT = 0.01, 0.10 # 1% ATM window, +-10% OTM window
     skew_results = []
-           
+
     # Plotly_VolatilitySkew.py moved ahead to share option_chains loop
     # Color code calls and puts, lighter color = further expiration
     fig_skew = go.Figure()
-        
+
     # Set default X-axis view to +-5% from current SPY price
     x_min, x_max = current_price * 0.95, current_price * 1.05
     all_ivs = []
@@ -731,9 +970,9 @@ with tab3:
     for i, entry in enumerate(option_chains):
         exp_date = entry['date']
         calls = entry['calls'].copy()
-        puts = entry['puts'].copy()       
+        puts = entry['puts'].copy()
         dte = (dt.strptime(exp_date, '%Y-%m-%d').date() - dt.now().date()).days
-        
+
         calls["type"] = "call"
         puts["type"] = "put"
 
@@ -758,25 +997,25 @@ with tab3:
             df_opt = df_opt[df_opt['impliedVolatility'] > 0.001]
             df_opt['smooth'] = df_opt['impliedVolatility'].rolling(window=5, min_periods=1, center=True).mean()
             alpha = 1.0 - (i / len(option_chains)) * 0.9
-            
+
             fig_skew.add_trace(
                 go.Scatter(
-                    x=df_opt['strike'], 
+                    x=df_opt['strike'],
                     y=df_opt['smooth'] * 100,
                     mode='lines',
                     line=dict(color=f'rgba({color_base}, {alpha})', width=1),
                     showlegend=False,
                     hovertemplate=(
-                        f'<b>DTE:</b> {dte}<br>' 
+                        f'<b>DTE:</b> {dte}<br>'
                         '<b>Strike:</b> %{x:.0f}<br>'
                         '<b>IV:</b> %{y:.2f}%'
                         '<extra></extra>'
                         )
                     )
                 )
-            # Collect IV for axis scaling  
+            # Collect IV for axis scaling
             mask = (df_opt['strike'] >= x_min) & (df_opt['strike'] <= x_max)
-            all_ivs.extend((df_opt.loc[mask, 'smooth'] * 100).tolist())          
+            all_ivs.extend((df_opt.loc[mask, 'smooth'] * 100).tolist())
 
     # Diagnostic results based on average
     with col1:
@@ -784,7 +1023,7 @@ with tab3:
         df_m = pd.DataFrame(skew_results)
         avg_tail, avg_conv, avg_fomo = df_m["tail"].mean(), df_m["put_conv"].mean(), df_m["call_fomo"].mean()
         ts_slope = df_m.iloc[-1]["tail"] - df_m.iloc[0]["tail"]
-        
+
         st.subheader("Skew Diagnostics")
         if avg_tail > 1.3: st.error("- Strong downside tail fear")
         elif avg_tail > 1.1: st.warning("- Moderate downside risk awareness")
