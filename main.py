@@ -1,14 +1,13 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import numpy as np
 import datetime
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime as dt
 from data_loader import (
     get_spy_data, get_vix_data, get_sh_data,
-    get_gv_data, get_options_data
+    get_gv_data
 )
 import content
 
@@ -259,7 +258,7 @@ with col_chart:
     st.plotly_chart(fig_overall_sentiment, width='stretch', config={'displayModeBar': False, 'scrollZoom': False})
 
 # Setup tabs for different catagories of indicators
-tab1, tab2, tab3, tab4 = st.tabs(["Market Trend", "Flight-To-Safety", "Research Appendix", "Options Activity"])
+tab1, tab2, tab3 = st.tabs(["Market Trend", "Flight-To-Safety", "Research Appendix"])
 
 
 # ==========================================
@@ -867,197 +866,4 @@ with tab3:
 
         fig_perf = plot_multi_horizon_performance(combined_sentiment_df, df_spy)
         st.plotly_chart(fig_perf, width='stretch')
-
-
-# ==========================================
-# TAB 4: OPTIONS ACTIVITY
-# ==========================================
-with tab4:
-    # --- Put/Call Sentiment ---
-
-    col1, col2 = st.columns([1, 3])
-
-    option_chains, current_price = get_options_data('SPY')
-
-    # [SentimentScore_PutCall_Ratio.py]
-
-    pcr_results = []
-
-    for entry in option_chains:
-      date = entry['date']
-      calls = entry['calls']
-      puts = entry['puts']
-
-      # Access volume and openInterest directly from the calls and puts DataFrames
-      v_put = puts['volume'].sum()
-      v_call = calls['volume'].sum()
-      oi_put = puts['openInterest'].sum() # Corrected access
-      oi_call = calls['openInterest'].sum() # Corrected access
-
-      # Calculate ratios with safety checks for division by zero
-      v_ratio = v_put / v_call if v_call > 0 else 0
-      oi_ratio = oi_put / oi_call if oi_call > 0 else 0
-
-      pcr_results.append({'date': date, 'v_pcr': v_ratio, 'oi_pcr': oi_ratio})
-
-    pcr_df = pd.DataFrame(pcr_results)
-    # Simple logic for "Highest Sentiment" quadrant
-    avg_v = pcr_df['v_pcr'].mean()
-    avg_oi = pcr_df['oi_pcr'].mean()
-
-    def get_pcr_sentiment(s):
-      sentiment_label = "Neutral"
-      if avg_v > 1.0 and avg_oi > 1.0:
-        return st.error(f"**Capitulation**")
-      elif avg_v < 1.0 and avg_oi < 1.0:
-        return st.success(f"**Bullish Setup**")
-      elif avg_v > 1.0 and avg_oi < 1.0:
-        return st.info(f"**Tactical Hedging**")
-      elif avg_v < 1.0 and avg_oi > 1.0:
-        return st.info(f"**Short Covering**")
-
-    # Title, Sentiment, PCR, and Description
-    with col1:
-        st.subheader("Put/Call Sentiment")
-        get_pcr_sentiment(pcr_df)
-        st.write("Avg Vol PCR:", f"{avg_v:.2f}")
-        st.write("Avg OI PCR:", f"{avg_oi:.2f}")
-        st.write("Put/Call Ratio measures the trading activity on Put relative to Call options. A ratio above 1 suggests bearish sentiment (more puts), while below 1 indicates bullishness (more calls). Furthermore, PCR can be divided into volume and open interest, which can be roughly interpreted as the immediate flow and existing commitment, respectively.")
-
-    # [Plotly_PutCall_Ratio.py]
-
-    today_ts = pd.Timestamp(dt.now().date())
-    pcr_df['DTE'] = (pd.to_datetime(pcr_df['date']) - today_ts).dt.days
-
-    with col2:
-        fig_pcr = go.Figure(data=[
-            go.Bar(x=pcr_df['DTE'], y=pcr_df['v_pcr'], name='Vol',
-              hovertemplate='<b>DTE:</b> %{x}<br><b>Volume PCR:</b> %{y:.2f}<extra></extra>'),
-            go.Bar(x=pcr_df['DTE'], y=pcr_df['oi_pcr'], name='OI',
-              hovertemplate='<b>DTE:</b> %{x}<br><b>OI PCR:</b> %{y:.2f}<extra></extra>')
-        ])
-        fig_pcr.update_layout(
-            dragmode='pan',
-            paper_bgcolor='#f9f9f9',
-            plot_bgcolor='#f9f9f9',
-            title='Put/Call Ratios (Nearest 14 Expirations)',
-            xaxis=dict(
-                title='DTE',
-                type='category',
-                tickvals=pcr_df.index,
-                ticktext=pcr_df['DTE']
-                )
-            )
-        st.plotly_chart(fig_pcr, width='stretch', config={'displayModeBar': False, 'scrollZoom': False})
-
-
-    # --- Skew Diagnostics ---
-    col1, col2 = st.columns([1, 3])
-
-    # [SentimentScore_VolatilitySkew.py]
-    ATM_WIN, OTM_PCT = 0.01, 0.10 # 1% ATM window, +-10% OTM window
-    skew_results = []
-
-    # Plotly_VolatilitySkew.py moved ahead to share option_chains loop
-    # Color code calls and puts, lighter color = further expiration
-    fig_skew = go.Figure()
-
-    # Set default X-axis view to +-5% from current SPY price
-    x_min, x_max = current_price * 0.95, current_price * 1.05
-    all_ivs = []
-
-    # Per-date loop for the all SPY options in the nearest 14 expirations
-    for i, entry in enumerate(option_chains):
-        exp_date = entry['date']
-        calls = entry['calls'].copy()
-        puts = entry['puts'].copy()
-        dte = (dt.strptime(exp_date, '%Y-%m-%d').date() - dt.now().date()).days
-
-        calls["type"] = "call"
-        puts["type"] = "put"
-
-        # Indentify ATM and OTM options
-        df_skew = pd.concat([calls, puts])
-        df_skew = df_skew[df_skew["impliedVolatility"] > 0]
-        df_skew["moneyness"] = df_skew["strike"] / current_price
-
-        atm = df_skew[(df_skew["moneyness"] > 1 - ATM_WIN) & (df_skew["moneyness"] < 1 + ATM_WIN)]
-        otm_calls = df_skew[(df_skew["type"] == "call") & (df_skew["moneyness"] > 1 + OTM_PCT)]
-        otm_puts = df_skew[(df_skew["type"] == "put") & (df_skew["moneyness"] < 1 - OTM_PCT)]
-
-        # Compute "Tail-skew", "Put Convexity", and "Call-FOMO"
-        if not (atm.empty or otm_calls.empty or otm_puts.empty):
-            m = {"tail": otm_puts["impliedVolatility"].mean() / otm_calls["impliedVolatility"].mean(),
-                 "put_conv": otm_puts["impliedVolatility"].mean() / atm["impliedVolatility"].mean(),
-                 "call_fomo": otm_calls["impliedVolatility"].mean() / atm["impliedVolatility"].mean()}
-            skew_results.append(m)
-
-        # Plotly metrics
-        for df_opt, color_base in [(calls, '0, 128, 0'), (puts, '255, 0, 0')]:
-            df_opt = df_opt[df_opt['impliedVolatility'] > 0.001]
-            df_opt['smooth'] = df_opt['impliedVolatility'].rolling(window=5, min_periods=1, center=True).mean()
-            alpha = 1.0 - (i / len(option_chains)) * 0.9
-
-            fig_skew.add_trace(
-                go.Scatter(
-                    x=df_opt['strike'],
-                    y=df_opt['smooth'] * 100,
-                    mode='lines',
-                    line=dict(color=f'rgba({color_base}, {alpha})', width=1),
-                    showlegend=False,
-                    hovertemplate=(
-                        f'<b>DTE:</b> {dte}<br>'
-                        '<b>Strike:</b> %{x:.0f}<br>'
-                        '<b>IV:</b> %{y:.2f}%'
-                        '<extra></extra>'
-                        )
-                    )
-                )
-            # Collect IV for axis scaling
-            mask = (df_opt['strike'] >= x_min) & (df_opt['strike'] <= x_max)
-            all_ivs.extend((df_opt.loc[mask, 'smooth'] * 100).tolist())
-
-    # Diagnostic results based on average
-    with col1:
-        # Compute the average of "Tail-skew", "Put Convexity", and "Call-FOMO" across all expirations
-        df_m = pd.DataFrame(skew_results)
-        avg_tail, avg_conv, avg_fomo = df_m["tail"].mean(), df_m["put_conv"].mean(), df_m["call_fomo"].mean()
-        ts_slope = df_m.iloc[-1]["tail"] - df_m.iloc[0]["tail"]
-
-        st.subheader("Skew Diagnostics")
-        if avg_tail > 1.3: st.error("- Strong downside tail fear")
-        elif avg_tail > 1.1: st.warning("- Moderate downside risk awareness")
-        else: st.success("- Balanced tail risk")
-
-        if avg_conv > 1.4: st.error("- Crash protection demand elevated")
-        if avg_fomo > 1.2: st.warning("- Upside FOMO / squeeze risk")
-        if ts_slope < -0.1: st.error("- Near-term fear dominant")
-        if ts_slope > 0.2: st.warning("- Long-term risk feared")
-        else: st.success("- Stable term-structure sentiment")
-        st.write("Implied Volatility (IV) significantly impacts option premiums. IV positively correlates to the expectation that the underlying option ends up “in the money”. Therefore, the volatility skew curve is a direct visualization of supply and demand dynamics influenced by trader sentiments. ")
-
-    # [Plotly_VolatilitySkew.py]
-
-    with col2:
-        # Set default Y-axis view to +-5% from ATM IV
-        if all_ivs:
-            ymin, ymax = min(all_ivs) * 0.95, max(all_ivs) * 1.05
-        else:
-            ymin, ymax = 0, 100
-
-        # Center line for current SPY price
-        fig_skew.add_vline(x=current_price, line_dash="dash", line_color="grey")
-        fig_skew.update_layout(
-            title=f"Volatility Skew (Current Price: {current_price:.2f})",
-            xaxis_title="Strikes",
-            yaxis_title="Implied Volatility (IV)",
-            xaxis_range=[x_min, x_max],
-            yaxis_range=[ymin, ymax],
-            height=600,
-            dragmode='pan',
-            paper_bgcolor='#f9f9f9',
-            plot_bgcolor='#f9f9f9',
-            )
-        st.plotly_chart(fig_skew, width='stretch', config={'displayModeBar': False})
-
 
