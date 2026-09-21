@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-09-20T11:01:46.231761+00:00",
+  "plotly_python_version": "6.5.0",
+  "plotly_js_version": "3.3.0",
+  "overall": {
+    "score": 43.900304414003045,
+    "label": "Fear",
+    "market_data_date": "2026-09-18"
+  },
+  "indicators": {
+    "spy": {
+      "score": 36.71232876712329,
+      "label": "Fear",
+      "market_data_date": "2026-09-18"
+    },
+    "vix": {
+      "score": 61.11111111111111,
+      "label": "Neutral",
+      "market_data_date": "2026-09-18"
+    },
+    "safe_haven": {
+      "score": 64.28571428571429,
+      "label": "Greed",
+      "market_data_date": "2026-09-18"
+    },
+    "growth_value": {
+      "score": 13.492063492063492,
+      "label": "Extreme Fear",
+      "market_data_date": "2026-09-18"
+    }
+  },
+  "charts": {
+    "overall": {
+      "file": "overall.json",
+      "status": "ready"
+    },
+    "spy": {
+      "file": "spy.json",
+      "status": "ready"
+    },
+    "vix": {
+      "file": "vix.json",
+      "status": "ready"
+    },
+    "safe_haven": {
+      "file": "safe_haven.json",
+      "status": "ready"
+    },
+    "growth_value": {
+      "file": "growth_value.json",
+      "status": "ready"
+    },
+    "correlation": {
+      "file": "correlation.json",
+      "status": "ready"
+    },
+    "recovery": {
+      "file": "recovery.json",
+      "status": "ready"
+    },
+    "forward_returns": {
+      "file": "forward_returns.json",
+      "status": "ready"
+    }
+  }
+}
