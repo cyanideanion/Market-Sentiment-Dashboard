@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Explore U.S. market sentiment through transparent indicators and historical research.">
+  <title>U.S. Market Sentiment Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#dashboard">Skip to dashboard</a>
+<div class="shell">
+<header>
+  <div class="eyebrow">MARKET RESEARCH / U.S. EQUITIES</div>
+  <h1>Market sentiment<span class="title-dot">.</span></h1>
+  <p class="intro">A view of investor confidence through market trends, volatility, and asset allocation.</p>
+  <div class="meta"><span id="market-date">Market data: —</span><span id="updated">Last updated: —</span><a href="https://github.com/cyanideanion/Market-Sentiment-Dashboard">View source ↗</a></div>
+</header>
+<main id="dashboard">
+<div id="status" role="status" aria-live="polite">Loading dashboard…</div>
+<div class="spectrum" aria-label="Aggregate sentiment score ranges">
+  <span class="fear">Extreme fear<small>0 ≤ score &lt; 25</small></span><span class="fear">Fear<small>25 ≤ score &lt; 45</small></span><span class="neutral">Neutral<small>45 ≤ score &lt; 56</small></span><span class="greed">Greed<small>56 ≤ score &lt; 76</small></span><span class="greed">Extreme greed<small>76 ≤ score ≤ 100</small></span>
+</div>
+<section class="overview card" aria-labelledby="aggregate-title">
+  <div class="overview-copy"><div class="eyebrow">THE BIG PICTURE</div><h2 id="aggregate-title">Aggregate sentiment</h2><div class="score"><span id="overall-score">—</span><small>/ 100</small></div><span id="overall-label" class="badge">Loading</span><p>The simple average of four market indicators. Explore how confidence has changed over time.</p></div>
+  <div class="chart" id="chart-overall" data-chart="overall" aria-label="Historical aggregate sentiment chart"></div>
+</section>
+<div class="tabs" role="tablist" aria-label="Dashboard sections">
+<button id="tab-market" role="tab" aria-selected="true" aria-controls="panel-market" tabindex="0">Market Trend</button>
+<button id="tab-safety" role="tab" aria-selected="false" aria-controls="panel-safety" tabindex="-1">Flight-To-Safety</button>
+<button id="tab-research" role="tab" aria-selected="false" aria-controls="panel-research" tabindex="-1">Research Appendix</button>
+</div>
+<section id="panel-market" role="tabpanel" aria-labelledby="tab-market">
+<article class="indicator card"><div class="copy"><div class="eyebrow">01 / PRICE TREND</div><h2>Technical momentum</h2><span class="badge" data-indicator="spy">Loading</span><p data-description="spy"></p></div><div class="chart" data-chart="spy" aria-label="SPY and 125-day moving average chart"></div></article>
+<article class="indicator card"><div class="copy"><div class="eyebrow">02 / VOLATILITY</div><h2>Volatility shocks</h2><span class="badge" data-indicator="vix">Loading</span><p data-description="vix"></p></div><div class="chart" data-chart="vix" aria-label="VIX and 50-day moving average chart"></div></article>
+</section>
+<section id="panel-safety" role="tabpanel" aria-labelledby="tab-safety" hidden>
+<article class="indicator card"><div class="copy"><div class="eyebrow">03 / ASSET ALLOCATION</div><h2>Cross-asset demand</h2><span class="badge" data-indicator="safe_haven">Loading</span><p data-description="safe_haven"></p></div><div class="chart" data-chart="safe_haven" aria-label="SPY and IEF return spread chart"></div></article>
+<article class="indicator card"><div class="copy"><div class="eyebrow">04 / EQUITY STYLES</div><h2>Sector rotation</h2><span class="badge" data-indicator="growth_value">Loading</span><p data-description="growth_value"></p></div><div class="chart" data-chart="growth_value" aria-label="Growth and value relative performance chart"></div></article>
+</section>
+<section id="panel-research" role="tabpanel" aria-labelledby="tab-research" hidden>
+<p class="note">These analyses are descriptive and conditional. They are not trading strategies; transaction costs, leverage, and execution assumptions are not modeled. Written findings are the author's existing commentary and do not recalculate with each data update.</p>
+<article class="research card"><h2>Correlation analysis</h2><div data-research="correlation_analysis"></div><div class="chart" data-chart="correlation" aria-label="Sentiment and SPY rolling correlation chart"></div></article>
+<article class="research card"><h2>Recovery time analysis</h2><div data-research="recovery_analysis"></div><div class="chart" data-chart="recovery" aria-label="Sentiment recovery time distribution"></div></article>
+<article class="research card"><h2>Forward performance analysis</h2><div data-research="forward_performance"></div><div class="chart" data-chart="forward_returns" aria-label="Forward returns by sentiment regime"></div></article>
+</section>
+</main>
+<footer><span>Market Sentiment Dashboard</span><span>For educational and research purposes. Not investment advice.</span></footer>
+</div>
+<noscript>This dashboard requires JavaScript to display interactive charts.</noscript>
+</body>
+</html>
