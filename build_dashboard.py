@@ -88,8 +88,24 @@ def build_dashboard(output_dir=None):
     latest_components = combined.iloc[-1][
         ["spy_score", "vix_score", "sh_score", "gv_score"]
     ]
-    if not all(math.isfinite(float(v)) and 0 <= float(v) <= 100 for v in latest_components):
-        raise ValueError("Latest aggregate lacks four valid indicator scores.")
+    if not all(
+        math.isfinite(float(v)) and 0 <= float(v) <= 100
+        for v in latest_components
+    ):
+        columns = ["spy_score", "vix_score", "sh_score", "gv_score"]
+    
+        details = combined[columns].tail(5).to_string()
+    
+        source_dates = "\n".join(
+            f"{name}: {frame.index[-1]}"
+            for name, frame in raw.items()
+        )
+    
+        raise ValueError(
+            "Latest aggregate lacks four valid indicator scores.\n\n"
+            f"Last five rows:\n{details}\n\n"
+            f"Latest downloaded dates:\n{source_dates}"
+        )
 
     summary = {
         "schema_version": 1,
