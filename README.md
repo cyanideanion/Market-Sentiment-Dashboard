@@ -9,7 +9,7 @@ The purpose of the project is **not to propose a trading strategy and thus does 
 - how different sentiment aligned with subsequent return distributions across different time horizons.
 
 ## Live Application
-**[View Live Dashboard](https://cy-market-sentiment-dashboard.streamlit.app)**
+**[View Live Dashboard](https://cyanideanion.github.io/Market-Sentiment-Dashboard)**
 
 ## Motivation
 Greed and fear, as part of “animal spirits”, are mental instincts that deviate economic decisions from rationality and efficiency. This theory was coined by John Maynard Keynes in his book *The General Theory of Employment, Interest and Money (1936)*, and maintained its popularity among studies in behavioral economics and behavioral finance today. 
