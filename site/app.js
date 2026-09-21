@@ -11,10 +11,21 @@ async function readJSON(url) {
   return response.json();
 }
 function setBadge(node, label) {
+  const colors = {
+    "Extreme Fear": "extreme-fear",
+    "Fear": "fear",
+    "Neutral": "neutral",
+    "Greed": "greed",
+    "Extreme Greed": "extreme-greed"
+  };
+
   node.textContent = label;
-  node.classList.remove('fear', 'greed', 'neutral');
-  node.classList.add(label.includes('Fear') ? 'fear' : label.includes('Greed') ? 'greed' : 'neutral');
+  node.classList.remove(
+    "extreme-fear", "fear", "neutral", "greed", "extreme-greed"
+  );
+  node.classList.add(colors[label] || "neutral");
 }
+
 function loadPlotly(version) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Invalid Plotly version in summary.json.');
   return new Promise((resolve, reject) => {
@@ -34,6 +45,7 @@ function inlineText(node, text) {
     node.append(child);
   });
 }
+
 function prose(node, text) {
   String(text).trim().split(/\n\s*\n/).forEach(block => {
     const value = block.trim().replace(/\s*\n\s*/g, ' ');
@@ -83,6 +95,7 @@ async function renderVisible() {
   await Promise.all(nodes.map(renderChart));
   nodes.filter(n => n.classList.contains('js-plotly-plot')).forEach(n => Plotly.Plots.resize(n));
 }
+
 function selectTab(tab, focus = false) {
   tabs.forEach(button => {
     const active = button === tab;
