@@ -79,6 +79,21 @@ def build_dashboard(output_dir=None):
         "growth_value": ["SPY", "IVW", "IVE"],
     }.items():
         validate_prices(raw[name], name, columns)
+        
+    common_dates = raw["spy"].index
+    
+    for name in ("vix", "safe_haven", "growth_value"):
+        common_dates = common_dates.intersection(raw[name].index)
+    
+    if common_dates.empty:
+        raise ValueError("The downloaded datasets have no shared market date.")
+    
+    latest_common_date = common_dates.max()
+    
+    raw = {
+        name: frame.loc[frame.index <= latest_common_date].copy()
+        for name, frame in raw.items()
+    }
 
     results = calculate_sentiment(
         raw["spy"], raw["vix"], raw["safe_haven"], raw["growth_value"]
