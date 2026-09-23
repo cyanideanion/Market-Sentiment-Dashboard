@@ -26,25 +26,46 @@ ROOT = Path(__file__).resolve().parent
 
 
 def validate_prices(frame, name, required_columns):
-    """Reject empty downloads, missing prices, and malformed date indexes."""
     if frame is None or frame.empty:
-        raise ValueError(f"{name}: downloaded no data; previous export retained.")
+        raise ValueError(f"{name}: downloaded no data.")
+
     if not isinstance(frame.index, pd.DatetimeIndex):
         raise ValueError(f"{name}: expected a DatetimeIndex.")
-    if frame.index.hasnans or not frame.index.is_unique or not frame.index.is_monotonic_increasing:
+
+    if (
+        frame.index.hasnans
+        or not frame.index.is_unique
+        or not frame.index.is_monotonic_increasing
+    ):
         raise ValueError(f"{name}: dates must be valid, unique, and sorted.")
+
     flat = frame.copy()
     if isinstance(flat.columns, pd.MultiIndex):
         flat.columns = flat.columns.get_level_values(0)
+
+    valid = pd.Series(True, index=flat.index)
+
     for column in required_columns:
         if column not in flat.columns:
             raise ValueError(f"{name}: missing {column}.")
+
         series = flat[column]
         if not isinstance(series, pd.Series):
             raise ValueError(f"{name}: ambiguous column {column}.")
-        value = float(series.iloc[-1])
-        if not math.isfinite(value) or value <= 0:
-            raise ValueError(f"{name}: latest {column} price is invalid.")
+
+        numeric = pd.to_numeric(series, errors="coerce")
+        valid &= (
+            numeric.notna()
+            & numeric.gt(0)
+            & numeric.lt(float("inf"))
+        )
+
+    valid_dates = flat.index[valid]
+
+    if valid_dates.empty:
+        raise ValueError(f"{name}: no dates have valid required prices.")
+
+    return valid_dates
 
 
 def score_summary(frame, score_column, label_column):
@@ -73,23 +94,30 @@ def build_dashboard(output_dir=None):
         "growth_value": growth_value,
     }
 
-    for name, columns in {
-        "spy": ["Close"], "vix": ["Close"],
+    required_columns = {
+        "spy": ["Close"],
+        "vix": ["Close"],
         "safe_haven": ["SPY", "IEF"],
         "growth_value": ["SPY", "IVW", "IVE"],
-    }.items():
-        validate_prices(raw[name], name, columns)
-        
-    common_dates = raw["spy"].index
-    
-    for name in ("vix", "safe_haven", "growth_value"):
-        common_dates = common_dates.intersection(raw[name].index)
-    
+    }
+
+    common_dates = None
+
+    for name, columns in required_columns.items():
+        valid_dates = validate_prices(raw[name], name, columns)
+
+        if common_dates is None:
+            common_dates = valid_dates
+        else:
+            common_dates = common_dates.intersection(valid_dates)
+
     if common_dates.empty:
-        raise ValueError("The downloaded datasets have no shared market date.")
-    
+        raise ValueError(
+            "The downloaded datasets have no shared date with valid prices."
+        )
+
     latest_common_date = common_dates.max()
-    
+
     raw = {
         name: frame.loc[frame.index <= latest_common_date].copy()
         for name, frame in raw.items()
