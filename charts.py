@@ -69,9 +69,9 @@ def build_spy_chart(df_spy):
     fig_spy = go.Figure()
     fig_spy.add_trace(go.Scatter(x=plot_spy.index, y=plot_spy['Close'], name='SPY',
                                  customdata=plot_spy['Sentiment'],
-                                 hovertemplate='<b>Price (SPY):</b> %{y:.2f}<extra></extra>'))
+                                 hovertemplate='<b>Price (SPY):</b> %{y:.2f}<br><b>Sentiment:</b> %{customdata}<extra></extra>'))
     fig_spy.add_trace(go.Scatter(x=plot_spy.index, y=plot_spy['125MA'], name='125MA',
-                                 hovertemplate='<b>125MA:</b> %{y:.2f}<br><b>Sentiment:</b> %{customdata}<extra></extra>'))
+                                 hovertemplate='<b>125MA:</b> %{y:.2f}<extra></extra>'))
 
     fig_spy.update_layout(
         dragmode='pan',
@@ -126,9 +126,9 @@ def build_vix_chart(vix_df):
     fig_vix = go.Figure()
     fig_vix.add_trace(go.Scatter(x=vix_df.index, y=vix_df['Close'], name='VIX',
                                  customdata=vix_df['Sentiment'],
-                                 hovertemplate='<b>VIX Close:</b> %{y:.2f}<extra></extra>'))
+                                 hovertemplate='<b>VIX Close:</b> %{y:.2f}<br><b>Sentiment:</b> %{customdata}<extra></extra>'))
     fig_vix.add_trace(go.Scatter(x=vix_df.index, y=vix_df['50MA'], name='50MA',
-                                 hovertemplate='<b>50MA:</b> %{y:.2f}<br><b>Sentiment:</b> %{customdata}<extra></extra>'))
+                                 hovertemplate='<b>50MA:</b> %{y:.2f}<extra></extra>'))
 
     fig_vix.update_layout(
         dragmode='pan',
@@ -254,9 +254,9 @@ def build_growth_value_chart(gv_dev):
     fig_gv = go.Figure()
     fig_gv.add_trace(go.Scatter(x=gv_dev.index, y=gv_dev['IVW_dev'], name='IVW',
                                 customdata=gv_dev['Sentiment'],
-                                hovertemplate='<b>IVW Dev:</b> %{y:.2f}%<extra></extra>'))
+                                hovertemplate='<b>IVW Dev:</b> %{y:.2f}%<br><b>Sentiment:</b> %{customdata}<extra></extra>'))
     fig_gv.add_trace(go.Scatter(x=gv_dev.index, y=gv_dev['IVE_dev'], name='IVE',
-                                hovertemplate='<b>IVE Dev:</b> %{y:.2f}%<br><b>Sentiment:</b> %{customdata}<extra></extra>'))
+                                hovertemplate='<b>IVE Dev:</b> %{y:.2f}%<extra></extra>'))
 
     fig_gv.update_layout(
         dragmode='pan',
