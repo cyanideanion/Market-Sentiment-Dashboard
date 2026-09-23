@@ -126,29 +126,50 @@ def build_dashboard(output_dir=None):
     results = calculate_sentiment(
         raw["spy"], raw["vix"], raw["safe_haven"], raw["growth_value"]
     )
+    
     combined = results["combined"]
-    
-    latest_components = combined.iloc[-1][
-        ["spy_score", "vix_score", "sh_score", "gv_score"]
+
+    score_columns = [
+        "spy_score", "vix_score", "sh_score", "gv_score"
     ]
-    if not all(
-        math.isfinite(float(v)) and 0 <= float(v) <= 100
-        for v in latest_components
-    ):
-        columns = ["spy_score", "vix_score", "sh_score", "gv_score"]
-    
-        details = combined[columns].tail(5).to_string()
-    
-        source_dates = "\n".join(
-            f"{name}: {frame.index[-1]}"
-            for name, frame in raw.items()
-        )
-    
+
+    scores = combined[score_columns]
+    valid_rows = (
+        scores.notna()
+        & scores.ge(0)
+        & scores.le(100)
+    ).all(axis=1)
+
+    valid_dates = combined.index[valid_rows]
+
+    if valid_dates.empty:
         raise ValueError(
-            "Latest aggregate lacks four valid indicator scores.\n\n"
-            f"Last five rows:\n{details}\n\n"
-            f"Latest downloaded dates:\n{source_dates}"
+            "No date has four valid indicator scores."
         )
+
+    latest_score_date = valid_dates.max()
+
+    # Stop rather than silently publish substantially older results.
+    if latest_common_date - latest_score_date > pd.Timedelta(days=7):
+        raise ValueError(
+            "The latest complete sentiment scores are more than "
+            "7 calendar days behind the latest shared price date."
+        )
+
+    if latest_score_date < latest_common_date:
+        print(
+            f"Using complete scores through {latest_score_date.date()}; "
+            f"newer prices through {latest_common_date.date()} "
+            "have incomplete indicator scores."
+        )
+
+    # Keep all charts and summary cards on the same ending date.
+    results = {
+        name: frame.loc[frame.index <= latest_score_date].copy()
+        for name, frame in results.items()
+    }
+
+    combined = results["combined"]
 
     summary = {
         "schema_version": 1,
