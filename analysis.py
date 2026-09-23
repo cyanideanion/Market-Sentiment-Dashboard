@@ -69,7 +69,9 @@ def calculate_sentiment(df_spy, vix_data, sh_data, gv_data):
     if isinstance(sh_data.columns, pd.MultiIndex):
         sh_data.columns = sh_data.columns.get_level_values(0)
 
-    sh_returns = sh_data.pct_change(20).dropna()
+    sh_returns = sh_data.ffill().pct_change(
+        periods=20, fill_method=None
+    ).dropna()
     # "IEF" = iShares 7-10 Year Treasury Bond ETF 
     sh_returns["Spread"] = sh_returns["SPY"] - sh_returns["IEF"]
     sh_returns["Score"] = (
@@ -83,7 +85,9 @@ def calculate_sentiment(df_spy, vix_data, sh_data, gv_data):
     if isinstance(gv_data.columns, pd.MultiIndex):
         gv_data.columns = gv_data.columns.get_level_values(0)
 
-    gv_returns = gv_data.pct_change(periods=252)
+    gv_returns = gv_data.ffill().pct_change(
+        periods=252, fill_method=None
+    )
     gv_dev = pd.DataFrame(index=gv_returns.index)
 
     # "IVW" = iShares S&P 500 Growth ETF
